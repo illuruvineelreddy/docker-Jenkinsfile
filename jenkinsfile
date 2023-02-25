@@ -1,0 +1,31 @@
+node{
+   
+    def buildNumber = BUILD_NUMBER
+    stage("Git Clone") {
+       
+        git url: 'https://github.com/ravi812/java-web-app-docker.git',branch: 'master'       
+    }
+   
+    stage("Build code") {
+       
+        def mavenHome= tool name: "Maven"
+        sh "${mavenHome}/bin/mvn clean package"
+    }
+   
+    stage("Build Docker Image"){
+       
+        sh "docker build -t test:${buildNumber} ."
+    }
+   
+    stage("Build push "){    
+        sh "docker tag test:${buildNumber} 674699026395.dkr.ecr.us-east-2.amazonaws.com/dockerimages:${buildNumber}"
+        sh "aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 674699026395.dkr.ecr.us-east-2.amazonaws.com"
+        sh "docker push 674699026395.dkr.ecr.us-east-2.amazonaws.com/dockerimages:${buildNumber}"
+    }
+   
+    stage("Deploying the pull"){
+         sh "ssh root@18.217.166.181 aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 674699026395.dkr.ecr.us-east-2.amazonaws.com"
+         sh "ssh root@18.217.166.181 docker pull 674699026395.dkr.ecr.us-east-2.amazonaws.com/dockerimages:${buildNumber}"
+         sh "ssh root@18.217.166.181 docker run -d -p 8087:8080 --name test_${buildNumber} 674699026395.dkr.ecr.us-east-2.amazonaws.com/dockerimages:${buildNumber}"
+    }
+}
