@@ -1,0 +1,19 @@
+node{
+   
+    def buildNumber = BUILD_NUMBER
+    stage("Git Clone") {
+       
+        git url: 'https://github.com/illuruvineelreddy/tomcat-application.git',branch: 'main'     
+    }
+   
+    stage("Build code") {
+       
+        def mavenHome= tool name: "Maven"
+        sh "${mavenHome}/bin/mvn clean package"
+    }
+   
+    stage("copy  war file"){
+    
+        sh "scp -o StrictHostKeyChecking=no  /var/lib/jenkins/workspace/TomCat/target/*.war root@18.217.166.181:/opt/tomcat/webapps/"
+    }
+}
